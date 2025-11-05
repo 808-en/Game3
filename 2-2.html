@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Aground 2 Version 2.2</title>
+  <style>
+    body { 
+      background: #222; 
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    canvas { 
+      display: block; 
+      margin: 40px auto 0 auto; 
+      background: #333; 
+      image-rendering: pixelated; 
+    }
+    #controls {
+      display: flex;
+      justify-content: center;
+      margin: 24px auto 0 auto;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    button {
+      width: 60px; 
+      height: 60px;
+      font-size: 1.7em;
+      border-radius: 12px;
+      border: none;
+      background: #0090ff;
+      color: white;
+      transition: background 0.2s, transform 0.1s;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    button:active {
+      background: #005fa3;
+      transform: translateY(2px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    #up { order: 1; }
+    #left { order: 2; }
+    #down { order: 3; }
+    #right { order: 4; }
+
+    .popup {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      border: 2px solid #0090ff;
+      display: none;
+      z-index: 100;
+      min-width: 400px;
+      max-width: 90%;
+      text-align: center;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    }
+    .popup h3 {
+      margin-top: 0;
+      color: #0090ff;
+    }
+    .popup ul {
+      list-style-type: none;
+      padding: 0;
+      /* Scrollable List Styles */
+      max-height: 300px; /* Set a max height for the list container */
+      overflow-y: auto; /* Enable vertical scrolling */
+      margin-bottom: 20px;
+      margin-top: 10px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding-top: 5px;
+    }
+    .popup li {
+      margin-bottom: 10px;
+      border-bottom: 1px dashed #555;
+      padding-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .popup li:last-child {
+      border-bottom: none;
+    }
+    
+    .item-icon {
+        width: 200px; 
+        height: 200px;
+        image-rendering: pixelated;
+        vertical-align: middle;
+    }
+
+    .popup .close-button {
+      background: #FFD700;
+      color: black;
+      width: 40px;
+      height: 40px;
+      font-size: 1.2em;
+      margin-top: 20px;
+    }
+
+    #inventory-display {
+      margin-top: 20px;
+      color: white;
+      text-align: center;
+    }
+    .inventory-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .inventory-placeholder {
+      width: 20px;
+      height: 20px;
+      background-color: purple;
+      border-radius: 4px;
+    }
+    #inventory-popup .inventory-buttons button {
+        width: auto;
+        padding: 10px 15px;
+        font-size: 1rem;
+        box-shadow: none;
+    }
+    #inventory-popup .inventory-buttons button:active {
+        transform: none;
+        box-shadow: none;
+    }
+    #inventory-popup .inventory-buttons button:nth-child(1) { background: #e74c3c; } 
+    #inventory-popup .inventory-buttons button:nth-child(2) { background: #3498db; } 
+    #inventory-popup .inventory-buttons button:nth-child(3) { background: #9b59b6; } 
+
+
+    .status-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+      width: 300px;
+      background: #333;
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .bar {
+      width: 100%;
+      height: 20px;
+      background: #555;
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bar-fill {
+      height: 100%;
+      transition: width 0.3s;
+    }
+    .bar-label {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px black;
+      font-size: 14px;
+    }
+    #health-bar .bar-fill {
+      background: red;
+    }
+    #stamina-bar .bar-fill {
+      background: green;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<div id="controls">
+  <button id="up" title="Up">&#8593;</button>
+  <button id="left" title="Left">&#8592;</button>
+  <button id="down" title="Down">&#8595;</button>
+  <button id="right" title="Right">&#8594;</button>
+  <button id="action" title="Action">A</button>
+  <button id="quest-button" title="Quests">Q</button>
+  <button id="inventory-button" title="Inventory">I</button>
+</div>
+
+<div class="status-bars">
+    <div id="health-bar" class="bar">
+        <div class="bar-fill"></div>
+        <div id="health-label" class="bar-label"></div>
+    </div>
+    <div id="stamina-bar" class="bar">
+        <div class="bar-fill"></div>
+        <div id="stamina-label" class="bar-label"></div>
+    </div>
+</div>
+
+<div id="quest-popup" class="popup">
+    <h3>Quests</h3>
+    <ul id="quest-list"></ul>
+    <button class="close-button" onclick="document.getElementById('quest-popup').style.display='none'">X</button>
+</div>
+
+<div id="inventory-popup" class="popup">
+    <h3>Inventory</h3>
+    <div style="margin-bottom: 10px;">
+        <input type="text" placeholder="Search..." style="width: 80%; padding: 5px; border-radius: 5px;">
+    </div>
+    <div class="inventory-buttons">
+        <button>Food</button>
+        <button>Weapons</button>
+        <button>Other</button>
+    </div>
+    <ul id="inventory-list"></ul>
+    <button class="close-button" onclick="document.getElementById('inventory-popup').style.display='none'">X</button>
+</div>
+
+<div id="congratulations-popup" class="popup">
+    <h3 id="congratulations-title">Enemy Defeated!</h3>
+    <p id="congratulations-message">You received:</p>
+    <ul id="reward-list" style="padding-left: 20px; list-style-type: disc; text-align: left; max-width: 200px; margin: 10px auto;">
+        </ul>
+    <button class="close-button" onclick="document.getElementById('congratulations-popup').style.display='none'">OK</button>
+</div>
+
+
+<script>
+const blockSize = 28;
+const unitsWide = 15, unitsTall = 10;
+const speed = blockSize / 2;
+let distanceMoved = 0;
+const staminaDrainDistance = 5 * blockSize;
+const staminaDrainAmount = 2;
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = unitsWide * blockSize;
+canvas.height = unitsTall * blockSize;
+
+let blockX = 3 * blockSize;
+let blockY = 1 * blockSize;
+let lastX = blockX;
+let lastY = blockY;
+
+const blockColor = "#fff";
+
+const enemyImage = new Image();
+enemyImage.src = 'kraken.png';
+
+const redFleshImage = new Image();
+redFleshImage.src = 'redFlesh.png';
+
+const inkImage = new Image();
+inkImage.src = 'ink.png';
+
+const berryImage = new Image();
+berryImage.src = 'berries.png';
+
+const itemImages = {
+    berries: berryImage,
+    Flesh: redFleshImage,
+    Ink: inkImage
+};
+
+const enemy = {
+  gridX: 0,
+  gridY: 7, 
+  health: 120,
+  maxHealth: 120,
+  name: 'Enemy'
+};
+
+const enemyPosition = {
+  x: enemy.gridX * blockSize,
+  y: (unitsTall - 1 - enemy.gridY) * blockSize
+};
+
+let gameState = {
+  player: {
+    health: 100,
+    maxHealth: 100,
+    stamina: 200,
+    maxStamina: 200
+  },
+  inventory: {
+    berries: 0,
+    Flesh: 0, 
+    Ink: 0   
+  },
+  quests: {
+    getBerries: {
+      objective: "Gather 5 berries.",
+      completed: false,
+      reward: {
+        berries: 3
+      }
+    }
+  },
+  items: {
+    berries: {
+      category: "food",
+      stamina_restore: 30,
+      color: 'purple',
+      image_src: 'berries.png' 
+    },
+    Flesh: { 
+      category: "food", 
+      color: '#A0522D', 
+      image_src: 'redFlesh.png' 
+    },
+    Ink: { 
+      category: "material",
+      stamina_restore: 50,
+      color: '#FF0000', 
+      image_src: 'ink.png' 
+    }
+  }
+};
+
+const bushPosition = {
+  x: 11 * blockSize,
+  y: (unitsTall - 1 - 6) * blockSize
+};
+
+function moveBlock(dx, dy) {
+  lastX = blockX;
+  lastY = blockY;
+  
+  let newX = blockX + dx;
+  let newY = blockY + dy;
+
+  newX = Math.max(0, Math.min(canvas.width - blockSize, newX));
+  newY = Math.max(0, Math.min(canvas.height - blockSize, newY));
+  
+  blockX = newX;
+  blockY = newY;
+}
+
+function isAdjacent(playerGridX, playerGridY, targetGridX, targetGridY) {
+  const dx = Math.abs(playerGridX - targetGridX);
+  const dy = Math.abs(playerGridY - targetGridY);
+  return dx <= 1 && dy <= 1 && (dx > 0 || dy > 0);
+}
+
+function createItemImageElement(itemKey) {
+    const item = gameState.items[itemKey];
+    if (!item || !item.image_src) return null;
+
+    const img = document.createElement('img');
+    img.src = item.image_src;
+    img.alt = itemKey;
+    img.className = 'item-icon';
+    return img;
+}
+
+function showCongratulationsPopup(data) {
+    const popup = document.getElementById('congratulations-popup');
+    document.getElementById('congratulations-title').textContent = data.title;
+    document.getElementById('congratulations-message').textContent = data.message;
+    
+    const rewardList = document.getElementById('reward-list');
+    rewardList.innerHTML = '';
+    
+    data.rewards.forEach(reward => {
+        const li = document.createElement('li');
+        const itemImage = createItemImageElement(reward.name);
+        if(itemImage) {
+            li.appendChild(itemImage);
+        }
+        
+        const textSpan = document.createElement('span');
+        textSpan.textContent = `${reward.name} x${reward.count}`;
+        li.appendChild(textSpan);
+
+        rewardList.appendChild(li);
+    });
+
+    popup.style.display = 'block';
+}
+
+
+document.getElementById("up").onclick = () => moveBlock(0, -speed);
+document.getElementById("down").onclick = () => moveBlock(0, speed);
+document.getElementById("left").onclick = () => moveBlock(-speed, 0);
+document.getElementById("right").onclick = () => moveBlock(speed, 0);
+
+document.getElementById("action").onclick = () => {
+  const playerGridX = Math.round(blockX / blockSize);
+  const playerGridY = Math.round(blockY / blockSize);
+  const bushGridX = Math.round(bushPosition.x / blockSize);
+  const bushGridY = Math.round(bushPosition.y / blockSize);
+
+  const enemyCanvasY = enemyPosition.y; 
+  const enemyGridY = Math.round(enemyCanvasY / blockSize);
+
+  if (enemy.health > 0 && isAdjacent(playerGridX, playerGridY, enemy.gridX, enemyGridY)) {
+    const damage = 20;
+    enemy.health = Math.max(0, enemy.health - damage);
+    console.log(`Attacked ${enemy.name}! Health remaining: ${enemy.health}/${enemy.maxHealth}`);
+    
+    if (enemy.health === 0) {
+      console.log(`${enemy.name} defeated! Granting rewards.`);
+      
+      gameState.inventory.Flesh += 5;
+      gameState.inventory.Ink += 2;
+
+      showCongratulationsPopup({
+        title: "Enemy Defeated!",
+        message: "You successfully defeated the enemy and received:",
+        rewards: [
+          { name: "Flesh", count: 5 },
+          { name: "Ink", count: 2 }
+        ]
+      });
+
+      updateInventoryPopup();
+    }
+    return;
+  }
+
+
+  if (playerGridX === bushGridX && playerGridY === bushGridY) {
+    gameState.inventory.berries++;
+    console.log(`Berries collected: ${gameState.inventory.berries}`);
+
+    const quest = gameState.quests.getBerries;
+    if (!quest.completed && gameState.inventory.berries >= 5) {
+      quest.completed = true;
+      gameState.inventory.berries += quest.reward.berries;
+      console.log(`Quest complete! You received ${quest.reward.berries} berries.`);
+      updateQuestUI();
+    }
+    updateInventoryPopup();
+  }
+};
+
+document.getElementById("quest-button").onclick = () => {
+  const popup = document.getElementById("quest-popup");
+  popup.style.display = (popup.style.display === "none") ? "block" : "none";
+  if (popup.style.display === "block") {
+    updateQuestUI();
+  }
+};
+
+document.getElementById("inventory-button").onclick = () => {
+  const popup = document.getElementById("inventory-popup");
+  popup.style.display = (popup.style.display === "none") ? "block" : "none";
+  if (popup.style.display === "block") {
+    updateInventoryPopup();
+  }
+};
+
+function eatItem(itemKey) {
+  const item = gameState.items[itemKey];
+
+  if (item && item.category === 'food' && gameState.inventory[itemKey] > 0) {
+      if (gameState.player.stamina < gameState.player.maxStamina) {
+        gameState.inventory[itemKey]--; 
+        gameState.player.stamina = Math.min(gameState.player.maxStamina, gameState.player.stamina + item.stamina_restore);
+        updateStatusBars();
+        updateInventoryPopup();
+        console.log(`Successfully ate ${itemKey}. Stamina restored by ${item.stamina_restore}.`);
+      } else {
+        console.log(`Cannot eat ${itemKey}: Stamina is already full (${gameState.player.stamina}/${gameState.player.maxStamina}). Drain some stamina first!`); 
+      }
+  } else if (item.category !== 'food') {
+    console.log(`Cannot eat ${itemKey}: It is a ${item.category} and must be crafted or processed first.`);
+  } else if (gameState.inventory[itemKey] === 0) {
+      console.log(`Error: You have no ${itemKey} to eat.`);
+  }
+}
+
+function drawLayers() {
+  ctx.fillStyle = "#0090ff";
+  ctx.fillRect(0, 0, canvas.width, blockSize * 4);
+
+  ctx.fillStyle = "#2ecc40";
+  ctx.fillRect(0, blockSize * 4, canvas.width, blockSize);
+
+  ctx.fillStyle = "#888";
+  ctx.fillRect(0, blockSize * 5, canvas.width, blockSize * 5);
+
+  ctx.fillStyle = 'purple';
+  ctx.fillRect(bushPosition.x, bushPosition.y, blockSize, blockSize);
+}
+
+function drawEnemy() {
+    if (enemy.health <= 0) return;
+
+    ctx.drawImage(enemyImage, enemyPosition.x, enemyPosition.y, blockSize, blockSize);
+
+    ctx.save();
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#FF4500";
+    ctx.fillText(enemy.name, enemyPosition.x + blockSize / 2, enemyPosition.y - 12);
+
+    const barWidth = blockSize;
+    const barHeight = 4;
+    const barX = enemyPosition.x;
+    const barY = enemyPosition.y - barHeight;
+
+    ctx.fillStyle = "#555";
+    ctx.fillRect(barX, barY - 12, barWidth, barHeight);
+
+    const healthPercentage = enemy.health / enemy.maxHealth;
+    ctx.fillStyle = healthPercentage > 0.2 ? "#32CD32" : "#FF0000";
+    ctx.fillRect(barX, barY - 12, barWidth * healthPercentage, barHeight);
+    ctx.restore();
+}
+
+function drawBlock() {
+  ctx.fillStyle = blockColor;
+  ctx.fillRect(blockX, blockY, blockSize, blockSize);
+}
+
+function getCoordinates() {
+  const gridX = Math.round(blockX / blockSize);
+  const gridY = unitsTall - 1 - Math.round(blockY / blockSize);
+  return `(${gridX},${gridY})`;
+}
+
+function drawCoordinates() {
+  ctx.save();
+  ctx.font = "bold 16px sans-serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#fff";
+  ctx.fillText(getCoordinates(), canvas.width - 8, 8);
+  ctx.restore();
+}
+
+function updateQuestUI() {
+  const questList = document.getElementById("quest-list");
+  questList.innerHTML = '';
+  const itemKey = 'berries';
+  const berryImage = createItemImageElement(itemKey);
+
+
+  for (const questId in gameState.quests) {
+    const quest = gameState.quests[questId];
+    const listItem = document.createElement("li");
+    
+    if (berryImage) {
+        listItem.appendChild(berryImage.cloneNode()); 
+    }
+
+    let text = `${quest.objective}`;
+    
+    if (quest.completed) {
+      text = `✓ ${quest.objective} - COMPLETED!`;
+    } else {
+      text += ` (${gameState.inventory.berries}/5)`;
+    }
+    
+    const textSpan = document.createElement('span');
+    textSpan.textContent = text;
+    listItem.appendChild(textSpan);
+
+    questList.appendChild(listItem);
+  }
+}
+
+function updateInventoryPopup() {
+  const itemList = document.getElementById('inventory-list');
+  itemList.innerHTML = '';
+  
+  const displayItems = [
+    { name: 'berries', label: 'Berries' },
+    { name: 'Flesh', label: 'Flesh' },
+    { name: 'Ink', label: 'Ink' }
+  ];
+
+  displayItems.forEach(itemInfo => {
+    const itemKey = itemInfo.name;
+    const itemLabel = itemInfo.label;
+
+    if (gameState.inventory[itemKey] > 0) {
+        const itemDiv = document.createElement('li');
+        itemDiv.className = 'inventory-item';
+        
+        const itemImage = createItemImageElement(itemKey);
+        if(itemImage) {
+            itemDiv.appendChild(itemImage);
+        }
+
+        const count = document.createElement('span');
+        count.textContent = `${itemLabel} x${gameState.inventory[itemKey]}`;
+        itemDiv.appendChild(count);
+
+        if (gameState.items[itemKey].category === "food") {
+            const eatButton = document.createElement('button');
+            eatButton.textContent = 'Eat';
+            eatButton.style.width = '60px';
+            eatButton.style.height = '40px';
+            eatButton.style.fontSize = '1em';
+            eatButton.onclick = () => eatItem(itemKey);
+            itemDiv.appendChild(eatButton);
+        } else {
+            const categorySpan = document.createElement('span');
+            categorySpan.textContent = `(${gameState.items[itemKey].category.toUpperCase()})`;
+            categorySpan.style.fontSize = '0.8em';
+            categorySpan.style.color = '#ccc';
+            itemDiv.appendChild(categorySpan);
+        }
+
+        itemList.appendChild(itemDiv);
+    }
+  });
+}
+
+function updateStatusBars() {
+  const healthFill = document.querySelector("#health-bar .bar-fill");
+  const staminaFill = document.querySelector("#stamina-bar .bar-fill");
+  const healthLabel = document.getElementById("health-label");
+  const staminaLabel = document.getElementById("stamina-label");
+
+  const healthPercentage = (gameState.player.health / gameState.player.maxHealth) * 100;
+  const staminaPercentage = (gameState.player.stamina / gameState.player.maxStamina) * 100;
+
+  healthFill.style.width = `${healthPercentage}%`;
+  staminaFill.style.width = `${staminaPercentage}%`;
+  
+  healthLabel.textContent = `Health ${gameState.player.health}/${gameState.player.maxHealth}`;
+  staminaLabel.textContent = `Stamina ${gameState.player.stamina}/${gameState.player.maxStamina}`;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawLayers();
+  drawEnemy();
+  drawBlock();
+  drawCoordinates();
+}
+
+function loop() {
+  draw();
+  
+  const movedThisFrame = Math.sqrt(Math.pow(blockX - lastX, 2) + Math.pow(blockY - lastY, 2));
+  if (movedThisFrame > 0) {
+      distanceMoved += movedThisFrame;
+      lastX = blockX;
+      lastY = blockY;
+      
+      const staminaToDrain = Math.floor(distanceMoved / staminaDrainDistance) * staminaDrainAmount;
+      if (staminaToDrain > 0) {
+          gameState.player.stamina = Math.max(0, gameState.player.stamina - staminaToDrain);
+          distanceMoved %= staminaDrainDistance;
+          updateStatusBars();
+      }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+window.onload = function() {
+    let imagesLoaded = 0;
+    const totalImages = Object.keys(itemImages).length + 1;
+
+    const checkAllLoaded = () => {
+        imagesLoaded++;
+        if (imagesLoaded === totalImages) {
+             loop();
+        }
+    };
+    
+    enemyImage.onload = checkAllLoaded;
+    berryImage.onload = checkAllLoaded;
+    redFleshImage.onload = checkAllLoaded;
+    inkImage.onload = checkAllLoaded;
+
+    if (enemyImage.complete) checkAllLoaded();
+    if (berryImage.complete) checkAllLoaded();
+    if (redFleshImage.complete) checkAllLoaded();
+    if (inkImage.complete) checkAllLoaded();
+
+    updateStatusBars();
+    updateInventoryPopup();
+};
+</script>
+</body>
+</html>
